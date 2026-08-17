@@ -1,0 +1,199 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DIRECT_URL")
+  extensions = [vector]
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum ProjectStatus {
+  pending
+  indexing
+  ready
+  failed
+}
+
+enum IndexJobStatus {
+  queued
+  running
+  completed
+  failed
+}
+
+enum ProjectRole {
+  owner
+  member
+}
+
+enum ChatRole {
+  user
+  assistant
+}
+
+enum IndexingPhase {
+  cloning
+  parsing
+  chunking
+  embedding
+  commits
+  done
+  failed
+}
+
+// ─── Models ──────────────────────────────────────────────────────────────────
+
+/// Synced from Clerk on first authenticated request — id is Clerk's `sub`.
+model User {
+  id        String   @id
+  email     String
+  name      String?
+  createdAt DateTime @default(now())
+
+  ownedProjects  Project[]       @relation("ProjectOwner")
+  memberships    ProjectMember[]
+  invitesCreated Invite[]        @relation("InviteCreator")
+  chatMessages   ChatMessage[]
+}
+
+model Project {
+  id            String        @id @default(uuid())
+  ownerId       String
+  name          String
+  githubUrl     String
+  githubOwner   String
+  githubRepo    String
+  defaultBranch String        @default("main")
+  status        ProjectStatus @default(pending)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  owner    User            @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members  ProjectMember[]
+  invites  Invite[]
+  indexJobs IndexJob[]
+  files    FileIndex[]
+  chunks   DocumentChunk[]
+  commits  CommitSummary[]
+  messages ChatMessage[]
+
+  @@index([ownerId])
+}
+
+model ProjectMember {
+  id        String      @id @default(uuid())
+  projectId String
+  userId    String
+  role      ProjectRole @default(member)
+  joinedAt  DateTime    @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@index([userId])
+}
+
+model Invite {
+  id        String    @id @default(uuid())
+  projectId String
+  token     String    @unique
+  createdBy String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  creator User    @relation("InviteCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([token])
+}
+
+model IndexJob {
+  id          String         @id @default(uuid())
+  projectId   String
+  status      IndexJobStatus @default(queued)
+  phase       IndexingPhase  @default(cloning)
+  progress    Int            @default(0)
+  currentStep String?
+  error       String?
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime       @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+model FileIndex {
+  id        String   @id @default(uuid())
+  projectId String
+  path      String
+  sha       String
+  summary   String?
+  indexedAt DateTime @default(now())
+
+  project Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  chunks  DocumentChunk[]
+
+  @@unique([projectId, path])
+  @@index([projectId])
+}
+
+/// Embeddings stored via pgvector.
+/// This application currently uses 3072-dimensional embeddings.
+/// Prisma doesn't natively type vector columns; we use Unsupported and raw SQL for reads/writes.
+model DocumentChunk {
+  id          String                      @id @default(uuid())
+  projectId   String
+  fileIndexId String
+  content     String
+  chunkIndex  Int
+  /// pgvector column — managed via raw SQL in the indexing/retrieval services
+ embedding   Unsupported("vector(3072)")?
+
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  fileIndex FileIndex @relation(fields: [fileIndexId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([fileIndexId])
+}
+
+model CommitSummary {
+  id            String    @id @default(uuid())
+  projectId     String
+  sha           String
+  message       String
+  author        String
+  committedAt   DateTime
+  summary       String?
+  summarizedAt  DateTime?
+  createdAt     DateTime  @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, sha])
+  @@index([projectId])
+}
+
+model ChatMessage {
+  id        String   @id @default(uuid())
+  projectId String
+  userId    String
+  role      ChatRole
+  content   String
+  /// JSON array of { path, chunkIndex, snippet }
+  sources   Json?
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}

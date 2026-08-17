@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build output
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Prisma
+backend/prisma/*.db
+
+# Temp repo clones during indexing
+backend/tmp/
+
+# Test coverage
+coverage/
+
+*.tsbuildinfo
