@@ -41,7 +41,7 @@ export async function runEmbeddingsE2ETest(): Promise<void> {
         githubOwner: "test",
         githubRepo: "test",
         ownerId: "test-user",
-        status: "testing",
+        status: "ready",
       },
     });
 
