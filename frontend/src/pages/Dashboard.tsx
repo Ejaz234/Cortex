@@ -481,7 +481,7 @@ export function Dashboard() {
                       <Github className="h-3.5 w-3.5" />
 
                       <span className="truncate">
-                        {project.owner}/{project.repo}
+                        {project.githubOwner}/{project.githubRepo}
                       </span>
                     </div>
                   </div>

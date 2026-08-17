@@ -3,7 +3,8 @@
  * Auth token is the Clerk session JWT, sent as Bearer token.
  */
 
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
+const API_URL =
+  import.meta.env.VITE_API_URL ?? "http://localhost:3001";
 
 export class ApiError extends Error {
   constructor(
@@ -46,7 +47,8 @@ async function request<T>(
       res.status
     );
   }
-   if (res.status === 204) {
+
+  if (res.status === 204) {
     return undefined as T;
   }
 
@@ -63,8 +65,8 @@ export interface Project {
   id: string;
   ownerId: string;
   name: string;
+  description?: string;
 
-  // Matches your Prisma schema
   githubUrl: string;
   githubOwner: string;
   githubRepo: string;
@@ -76,11 +78,12 @@ export interface Project {
   updatedAt: string;
 }
 
-// Matches the actual shape returned by GET /api/projects/:id/status
 export interface IndexingStatus {
   projectStatus: "pending" | "indexing" | "ready" | "failed";
+
   indexJob: {
     id: string;
+
     phase:
       | "cloning"
       | "parsing"
@@ -89,8 +92,15 @@ export interface IndexingStatus {
       | "commits"
       | "done"
       | "failed";
+
     progress: number;
-    status: "queued" | "running" | "completed" | "failed";
+
+    status:
+      | "queued"
+      | "running"
+      | "completed"
+      | "failed";
+
     currentStep: string | null;
     error: string | null;
     startedAt: string | null;
@@ -110,11 +120,10 @@ export interface Message {
   citations?: Citation[];
 }
 
-// Matches the actual shape returned by POST /api/projects/:id/chat
 export interface ChatResponse {
   id: string;
   answer: string;
-  sources: string[];
+  sources: Citation[];
   hadContext: boolean;
 }
 
@@ -158,6 +167,7 @@ export const api = {
       token: string,
       data: {
         name: string;
+        description?: string;
         githubUrl: string;
       }
     ) =>
