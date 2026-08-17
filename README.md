@@ -54,24 +54,18 @@ GitHub Repository
 ## 🛠️ Tech Stack
 
 ### Frontend
-
 - React
 - TypeScript
 - Vite
 - Tailwind CSS
-- React Router
-- Clerk
-- Lucide Icons
+- shadcn/ui
+- Clerk Authentication
 
 ### Backend
-
 - Node.js
-- TypeScript
 - Express
+- TypeScript
 - Prisma ORM
-- PostgreSQL
-- Supabase
-- pgvector
 
 ### AI & RAG
 - Google Gemini
@@ -208,17 +202,6 @@ When a repository is added to Cortex:
 7. The relevant repository context is provided to the AI model.
 8. The AI generates an answer based on the codebase.
 
----
-
-## 🔒 Environment Variables
-
-Environment files are intentionally excluded from Git.
-
-Make sure you configure the required variables before running or deploying the application.
-
-```text
-backend/.env
-frontend/.env
 
 
 
